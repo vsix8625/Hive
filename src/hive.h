@@ -20,6 +20,8 @@ extern "C"
     void *hive_cell_alloc(struct hive_cell *cell, size_t size);
     void hive_cell_soft_reset(struct hive_cell *cell);
     void hive_cell_reset(struct hive_cell *cell);
+
+    void hive_log_all_stats(void);
     void hive_cell_log_stats(const struct hive_cell *cell);
 
     // getters

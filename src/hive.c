@@ -172,6 +172,20 @@ size_t hive_cell_get_alloc_count(const struct hive_cell *cell)
 }
 #endif
 
+void hive_log_all_stats(void)
+{
+    hive_lock(&g_hive_registry.lock);
+
+    for (size_t i = 0; i < g_hive_registry.count; i++)
+    {
+        struct hive_cell *cell = g_hive_registry.cells[i];
+
+        hive_cell_log_stats(cell);
+    }
+
+    hive_unlock(&g_hive_registry.lock);
+}
+
 void hive_cell_log_stats(const struct hive_cell *cell)
 {
     if (cell == NULL)
