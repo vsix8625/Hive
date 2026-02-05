@@ -31,6 +31,7 @@ void run_phase(const char *name, struct hive_cell *c1, struct hive_cell *c2)
         if (p)
         {
             ptrs[i] = p;
+
             /* The "Touch": Triggers Demand Paging / Huge Page Commits */
             memset(p, (int) i, size);
         }
@@ -52,20 +53,21 @@ int main(void)
 {
     srand((unsigned int) time(NULL));
 
-    // 1. Initialize Hive System
     if (!hive_init())
     {
         fprintf(stderr, "Hive failed to init!\n");
         return 1;
     }
 
-    // 2. Create Cells (Equivalent to Radiant Regions)
     struct hive_cell *renderer = hive_cell_create("renderer", RENDERER_SIZE);
     struct hive_cell *physics = hive_cell_create("physics", PHYSICS_SIZE);
 
     if (!renderer || !physics)
+    {
         return 1;
+    }
 
+    printf("Allocs per phase: %d", ALLOCS_PER_PHASE);
     /* ---------------- PHASE 1: COLD START ---------------- */
     // This tests first-time page faults and Huge Page creation
     run_phase("COLD START", renderer, physics);

@@ -305,6 +305,11 @@ void hive_cell_destroy(struct hive_cell *cell)
 
 bool hive_init(void)
 {
+    if (!reaper_init())
+    {
+        return false;
+    }
+
     enum hive_state expected = HIVE_STATE_OFF;
     if (!atomic_compare_exchange_strong(&g_hive_state, &expected, HIVE_STATE_RUNNING))
     {
@@ -315,8 +320,6 @@ bool hive_init(void)
 
     uintptr_t cursor_expected = 0;
     atomic_compare_exchange_strong(&g_hive_cursor, &cursor_expected, HIVE_ADDR_HINT);
-
-    reaper_init();
 
     return true;
 }
