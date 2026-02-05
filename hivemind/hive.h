@@ -1,9 +1,9 @@
 #ifndef HIVE_H_
 #define HIVE_H_
 
+#include "os_layer.h"
+
 #include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C"

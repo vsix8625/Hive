@@ -6,8 +6,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
-#include <unistd.h>
 
 struct hive_cell
 {
@@ -240,7 +238,14 @@ struct hive_cell *hive_cell_create(const char *name, size_t capacity)
     }
     capacity = hive_nxtpow2(capacity);
 
-    size_t alignment = (capacity >= HIVE_PAGE_SIZE_HUGE) ? HIVE_PAGE_SIZE_HUGE : g_sys_pagesize;
+    size_t alignment = g_sys_pagesize;
+
+#if defined(HIVE_OS_LINUX)
+    if (capacity >= HIVE_PAGE_SIZE_HUGE)
+    {
+        alignment = HIVE_PAGE_SIZE_HUGE;
+    }
+#endif
 
     capacity = hive_align_up(capacity, alignment);
 
@@ -254,7 +259,7 @@ struct hive_cell *hive_cell_create(const char *name, size_t capacity)
         return NULL;
     }
 
-    void *ptr = mmap((void *) hint, capacity, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    void *ptr = hive_map(hint, capacity);
 
     if (ptr == MAP_FAILED)
     {
@@ -268,10 +273,12 @@ struct hive_cell *hive_cell_create(const char *name, size_t capacity)
     cell->capacity = capacity;
     cell->used = 0;
 
+#if defined(HIVE_OS_LINUX)
     if (alignment == HIVE_PAGE_SIZE_HUGE)
     {
         madvise(cell->base, cell->capacity, MADV_HUGEPAGE);
     }
+#endif
 
 #if defined(DEBUG)
     cell->page_size = alignment;
@@ -292,7 +299,7 @@ void hive_cell_destroy(struct hive_cell *cell)
 
     if (cell->base)
     {
-        if (munmap(cell->base, cell->capacity) == -1)
+        if (!hive_unmap(cell->base, cell->capacity))
         {
             fprintf(stderr, "%s: munmap failed for %s: %s\n", __func__, cell->name, strerror(errno));
         }
@@ -316,7 +323,7 @@ bool hive_init(void)
         return false;
     }
 
-    g_sys_pagesize = (size_t) sysconf(_SC_PAGESIZE);
+    g_sys_pagesize = hive_sys_pagesize();
 
     uintptr_t cursor_expected = 0;
     atomic_compare_exchange_strong(&g_hive_cursor, &cursor_expected, HIVE_ADDR_HINT);
@@ -389,6 +396,9 @@ void hive_cell_soft_reset(struct hive_cell *cell)
         return;
     }
     cell->used = 0;
+#if defined(DEBUG)
+    cell->total_allocs = 0;
+#endif
 }
 
 void hive_cell_reset(struct hive_cell *cell)
@@ -398,7 +408,10 @@ void hive_cell_reset(struct hive_cell *cell)
         return;
     }
 
+    // for now windows soft and reset calls are the same
+#if defined(HIVE_OS_LINUX)
     madvise(cell->base, cell->used, MADV_DONTNEED);
+#endif
 
     cell->used = 0;
 #if defined(DEBUG)
