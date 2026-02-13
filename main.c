@@ -32,7 +32,6 @@ void run_phase(const char *name, struct hive_cell *c1, struct hive_cell *c2)
         {
             ptrs[i] = p;
 
-            /* The "Touch": Triggers Demand Paging / Huge Page Commits */
             memset(p, (int) i, size);
         }
     }
