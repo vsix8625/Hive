@@ -358,13 +358,14 @@ void *hive_cell_align_alloc(struct hive_cell *cell, size_t size, size_t align)
     }
 
     size_t start_offset = (cell->used + align - 1) & ~(align - 1);
-    size_t end_offset = start_offset + size;
 
-    if (end_offset > cell->capacity)
+    if (size > cell->capacity || start_offset > (cell->capacity - size))
     {
-        fprintf(stderr, "%s: hive_cell '%s' OOM (%zu/%zu)\n", __func__, cell->name, end_offset, cell->capacity);
+        fprintf(stderr, "%s: hive_cell '%s' OOM \n", __func__, cell->name);
         return NULL;
     }
+
+    size_t end_offset = start_offset + size;
 
     void *ptr = (char *) cell->base + start_offset;
     cell->used = end_offset;
